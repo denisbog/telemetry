@@ -1,0 +1,20 @@
+[package]
+name = "report"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.8"
+chrono = "0.4.42"
+regex = "1.12.2"
+rumqttc = "0.25.1"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.148"
+tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1.44"
+tracing-subscriber = "0.3.22"
+
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true
