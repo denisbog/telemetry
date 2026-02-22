@@ -7,9 +7,10 @@ use std::{
     time::Duration,
 };
 
-use axum::{Json, Router, response::Html, routing::get};
+use axum::{Json, Router, extract::Query, response::Html, routing::get};
 use regex::Regex;
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
+use serde::Deserialize;
 use tracing::{debug, info};
 #[derive(Debug, Clone)]
 struct AppState {
@@ -83,9 +84,24 @@ async fn listen(samples: Arc<Mutex<Vec<Sample>>>) -> () {
         }
     }
 }
-
-async fn data(axum::extract::State(state): axum::extract::State<AppState>) -> Json<Vec<Sample>> {
-    Json(state.samples.lock().unwrap().clone())
+#[derive(Deserialize)]
+struct DataParams {
+    all: Option<bool>,
+}
+async fn data(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    Query(params): Query<DataParams>,
+) -> Json<Vec<Sample>> {
+    if let Ok(samples) = state.samples.lock() {
+        let out = if !params.all.is_some() && samples.len() > 2000 {
+            samples.last_chunk::<2000>().unwrap().to_vec()
+        } else {
+            samples.clone()
+        };
+        Json(out)
+    } else {
+        Json(vec![])
+    }
 }
 
 fn load_from_file(path: &str) -> Vec<Sample> {
